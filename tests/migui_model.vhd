@@ -13,6 +13,7 @@ entity migui_model is
   generic (
     IMAGE_FILE : string := "image.hex";
     FINAL_FILE : string := "";             -- expected changes at the end
+    BASE_FILE : string := "";              -- expected base when loaded by other means
     CALIB_CYCLES : natural := 200;
     READ_LATENCY : positive := 20
   );
@@ -73,6 +74,14 @@ begin
         file_close(image);
       end if;
       expected:=mem;
+      if BASE_FILE'length>0 then
+        file_open(image, BASE_FILE, read_mode);
+        while not endfile(image) loop
+          readline(image,row); hread(row,addr); hread(row,value);
+          expected(to_integer(unsigned(addr))):=value;
+        end loop;
+        file_close(image);
+      end if;
       if FINAL_FILE'length>0 then
         file_open(image, FINAL_FILE, read_mode);
         while not endfile(image) loop

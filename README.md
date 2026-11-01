@@ -312,3 +312,50 @@ Tera Termを別プロセスから同時に開く方式ではなく、接続済�
 試験結果は `tests/evidence/tera-test-result.txt`、受信ログは `teraterm-live.log`。
 シミュレーションでもCPUの無限ループをBREAKで停止し、同じ接続で再転送・再実行する試験がPASS。
 現在の実機とTera Termは、公開元サンプルの結果を繰り返し表示中。
+
+## DDR3でSimple OSを実行するArty S7-50構成
+
+オリジナルのSimple OS（`os_book_code` 固定版 `d377b03` の `os.asm` を無改変でアセンブルした `os.bin`）を、1MiBの主記憶をDDR3に置いて実機で実行する。SYSCALLのうち41はCPU内で処理し、それ以外はUART経由でPCホスト（`tools/simpleos_host.py`）が処理する。PCホストは `emu.py` の表示・仮想コンソール・レジスタ表示・ダンプ・文字列読出しの関数を無改変のまま読み込み、メモリーアクセスだけをFPGAへ向ける。
+
+| ファイル | 役割 |
+|---|---|
+| `rtl/simpleos_os_board.vhd` | 最上位。F14の12MHz→MMCM（VCO 600MHz）→MIG用100MHz・参照200MHz、MIG、コア |
+| `rtl/simpleos_os_core.vhd` | MIGのui_clk（81.25MHz）上のCPU・MMU・100msタイマー・DDR3アダプター・UARTモニター |
+| `board/artys7_os.xdc` | 12MHz、BTN0、UART（JC1=FPGA送信、JC2=FPGA受信、JC5=GND）、LED |
+| `board/build_os.tcl` | 合成〜bitstream。setup/hold違反時はbitstreamを出さない |
+| `tools/simpleos_host.py` | PCホスト。Ctrl+]に続けて0〜3で仮想コンソール切替、Ctrl+]に続けてqで終了 |
+| `tools/check_board.py` | 実機の自動確認（DDR3読み書きとOSの対話） |
+
+R2の100MHzは使わない。R2と同じクロック領域のMMCMをMIGが使うため、配置で専用クロック経路を確保できない。
+
+UARTプロトコル（詳細は `simpleos_os_core.vhd` 冒頭）：FPGA→PCは `B`（起動）、`S`（SYSCALL番号・R8・R9）、`H`（HALT）。PC→FPGAは `W`/`R`（物理メモリー）、`G`（全レジスタ）、`C`（SYSCALL完了。R8書込み、SYSCALL 22用のPC退避と0番地分岐）、`X`（実行開始）、`Z`（1MiBを0で初期化）、BREAK（ローダーへ戻る）。DDR3の初期内容は不定なので、`emu.py` と同じ0初期化の状態を `Z` で作る。HALT後もCPUのレジスタは保持し、PCホストは `emu.py` と同じく「CPU halted.」と全レジスタを表示する。
+
+LED0はDDR3較正済み、LED1はCPU実行中、LED2はSYSCALL処理中、LED3はフォルト停止・UART受信異常・タイマー溢れ。
+
+### ビルドと実行
+
+```sh
+/home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/gen_mig.tcl
+/home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/build_os.tcl -tclargs build/os
+# ArtyのUSB（FT2232, 0403:6010）をWSLへ：usbipd attach --wsl --busid <BUSID>
+/home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/program_cpu.tcl \
+  -tclargs build/os/simpleos_os_board.bit 210352B0BF4AA
+```
+
+WindowsのPython（pyserial）からCOM5で起動する。Tera TermはCOM5から切断しておく。
+
+```powershell
+py tools\simpleos_host.py COM5 --book \\wsl.localhost\Ubuntu-24.04\home\itoh\os_book_code
+```
+
+`--book` のディレクトリーの `emu.py`・`os.bin`・`dir/` を使う。`--os-bin`・`--dir` で個別に指定できる。
+
+### 試験
+
+```sh
+bash tests/prepare_os_core.sh /tmp/os-book-isa-review os   # UARTプロトコル経由でOS・BREAK・SYSCALL 22・Z
+python3 tests/test_host.py /tmp/os-book-isa-review          # ボードなし：emu.pyのCPUを使う模擬FPGAでPCホストを試験
+bash tests/run_regression.sh /tmp/os-book-isa-review /tmp/simple-c-isa-review   # 上記を含む13本
+```
+
+2026-11-01の結果：回帰試験13本すべて合格。実機（Arty S7-50、serial 210352B0BF4AA）では、DDR3較正後に `B`・`Z`、16KiBの乱数を4か所（00000・40000・80000・FC000）で書込み・読戻し一致、`Z` 後の領域が0、続いてOSが起動し `ls`・`date`・`reg`・`taskexec pagefault.bin`（タイマー割込みとページフォルトを経てタスク1の仮想コンソールに `12345`）・`exit` まで動作してHALTした。`reg` 時のTPが0x1B、`exit` 時が0x5Bで、その間の約6.5秒に対し64回（100ms周期）のタイマー割込みを数えた。ログは `tests/evidence/os-ddr3-hardware.log`、JTAGは `os-ddr3-jtag.log`、タイミングは `os-ddr3-timing.rpt`（WNS +0.799ns、WHS +0.033ns）、bitstreamのSHA-256は `os-ddr3-bitstream.sha256`。

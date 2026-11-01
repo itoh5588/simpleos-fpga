@@ -29,7 +29,9 @@ entity simpleos_cpu is
     mmu_reload : out std_logic;
     mmu_ready : in std_logic := '1';
     mmu_enabled : out std_logic;
-    page_table : out unsigned(19 downto 0)
+    page_table : out unsigned(19 downto 0);
+    interrupts_enabled : out std_logic;   -- CR bit 30, gates the timer queue
+    host_call : in std_logic := '0'       -- with host_ready: push PC, PC<=0 (SYSCALL 22)
   );
 end;
 architecture rtl of simpleos_cpu is
@@ -87,6 +89,7 @@ begin
   host_number <= instruction(19 downto 0);
   host_r8 <= regs(8); host_r9 <= regs(9);
   halted <= '1' when state=stopped else '0';
+  interrupts_enabled <= regs(15)(30);
   faulted <= failed;
   debug_value <= regs(to_integer(debug_index));
   process(clk)
@@ -310,7 +313,17 @@ begin
           when host_wait =>
             if host_ready='1' then
               if host_write_r8='1' then regs(8)<=host_result; end if;
-              state<=fetch_request;
+              if host_call='1' then
+                -- Same push as CALL: the PC after SYSCALL is saved, then PC=0.
+                sp := regs(11)-4;
+                if regs(11)<4 then sp:=(others=>'0'); end if;
+                regs(11)<=sp; bus_addr<=sp(19 downto 0);
+                bus_size<=to_unsigned(4,3); bus_data<=regs(12);
+                bus_write<='1'; branch_target<=(others=>'0'); action<=call_pc;
+                state<=data_wait;
+              else
+                state<=fetch_request;
+              end if;
             end if;
           when stopped => null;
         end case;
