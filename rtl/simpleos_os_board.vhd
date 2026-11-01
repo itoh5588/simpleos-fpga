@@ -5,15 +5,17 @@
 -- oscillator is not used: its clock region's MMCM belongs to the MIG.
 -- The OS core runs on the MIG ui_clk (DDR3 325 MHz / 4 = 81.25 MHz) and is
 -- held in reset until calibration completes. BTN0 resets the MIG.
--- UART: Pmod JC1 (FPGA TX) / JC2 (FPGA RX), 115200 8N1, see simpleos_os_core.
--- LED0 core alive (calibrated), LED1 CPU running, LED2 in SYSCALL, LED3 error.
+-- UART: Pmod JC1 (FPGA TX) / JC2 (FPGA RX), 8N1, 3 Mbaud by default (FT232R
+-- maximum; 81.25 MHz / 27 = 3.009 Mbaud), see simpleos_os_core.
+-- O_LED(0..3) = board LD2..LD5: LD2 core alive (calibrated), LD3 CPU running,
+-- LD4 in SYSCALL, LD5 error.
 library ieee;
 use ieee.std_logic_1164.all;
 library unisim;
 use unisim.vcomponents.all;
 
 entity simpleos_os_board is
-  generic (BAUD : positive := 115200);
+  generic (BAUD : positive := 3000000);
   port (
     I_CLK12, I_RESET, I_RXD : in std_logic;
     O_TXD : out std_logic;

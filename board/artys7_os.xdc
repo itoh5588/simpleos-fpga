@@ -6,7 +6,8 @@ set_property CONFIG_VOLTAGE 3.3 [current_design]
 set_property PACKAGE_PIN F14 [get_ports I_CLK12]
 set_property IOSTANDARD LVCMOS33 [get_ports I_CLK12]
 create_clock -name board_clk -period 83.333 [get_ports I_CLK12]
-# BTN0, UART on Pmod JC (JC1 = FPGA TX, JC2 = FPGA RX, JC5 = GND), LED0..3.
+# BTN0, UART on Pmod JC (JC1 = FPGA TX, JC2 = FPGA RX, JC5 = GND),
+# O_LED[0..3] = user LEDs LD2..LD5 on the board silkscreen (LD0/LD1 are the RGB LEDs).
 set_property PACKAGE_PIN G15 [get_ports I_RESET]
 set_property PACKAGE_PIN V16 [get_ports I_RXD]
 set_property PACKAGE_PIN U15 [get_ports O_TXD]

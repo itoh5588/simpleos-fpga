@@ -88,9 +88,10 @@ def main():
     p.add_argument('--book', type=pathlib.Path, required=True)
     p.add_argument('--os-bin', type=pathlib.Path)
     p.add_argument('--dir', type=pathlib.Path)
+    p.add_argument('--baud', type=int, default=3000000)
     a = p.parse_args()
     import serial
-    port = serial.Serial(a.port, 115200, timeout=0.05)
+    port = serial.Serial(a.port, a.baud, timeout=0.05)
     link = simpleos_host.Link(port)
     try:
         memory_test(link)

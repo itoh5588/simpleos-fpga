@@ -330,7 +330,7 @@ R2の100MHzは使わない。R2と同じクロック領域のMMCMをMIGが使う
 
 UARTプロトコル（詳細は `simpleos_os_core.vhd` 冒頭）：FPGA→PCは `B`（起動）、`S`（SYSCALL番号・R8・R9）、`H`（HALT）。PC→FPGAは `W`/`R`（物理メモリー）、`G`（全レジスタ）、`C`（SYSCALL完了。R8書込み、SYSCALL 22用のPC退避と0番地分岐）、`X`（実行開始）、`Z`（1MiBを0で初期化）、BREAK（ローダーへ戻る）。DDR3の初期内容は不定なので、`emu.py` と同じ0初期化の状態を `Z` で作る。HALT後もCPUのレジスタは保持し、PCホストは `emu.py` と同じく「CPU halted.」と全レジスタを表示する。
 
-LED0はDDR3較正済み、LED1はCPU実行中、LED2はSYSCALL処理中、LED3はフォルト停止・UART受信異常・タイマー溢れ。
+LEDは基板印刷のユーザーLED LD2〜LD5を使う（LD0・LD1は3色LEDで未使用）。LD2（E18）はDDR3較正済み、LD3（F13）はCPU実行中、LD4（E13）はSYSCALL処理中、LD5（H15）はフォルト停止・UART受信異常・タイマー溢れ。
 
 ### ビルドと実行
 
@@ -343,6 +343,17 @@ LED0はDDR3較正済み、LED1はCPU実行中、LED2はSYSCALL処理中、LED3�
 ```
 
 WindowsのPython（pyserial）からCOM5で起動する。Tera TermはCOM5から切断しておく。
+
+UARTは既定で3Mbaud（FT232Rの上限。81.25MHz÷27＝3.009Mbaud、誤差+0.3%）。115200bpsにする場合は `build_os.tcl` の第2引数とPCホストの `--baud` を揃える。FTDIドライバーの待ち時間タイマー（既定16ms）は、デバイスマネージャー → COM5のプロパティ → ポートの設定 → 詳細設定 → 待ち時間タイマーで1msにする。詳細設定とプロパティの両方でOKを押し、アダプターを挿し直すと反映される。値は `HKLM\SYSTEM\CurrentControlSet\Enum\FTDIBUS\VID_0403+PID_6001+<シリアル>\0000\Device Parameters` の `LatencyTimer` で確認できる。
+
+| 往復時間（中央値） | 16ms・115200 | 1ms・115200 | 1ms・3Mbaud |
+|---|---|---|---|
+| `R` 1バイト | 16.0ms | 1.0ms | 1.0ms |
+| `G` | 22.0ms | 6.5ms | 1.0ms |
+| `R` 256バイト | 38.2ms | 24.0ms | 2.0ms |
+| `W` 256バイト | 32.0ms | 24.0ms | 2.0ms |
+
+3Mbaud・1msの実機確認（`tests/evidence/os-ddr3-3mbaud-hardware.log`）：16KiBの書込み・読戻しが各0.1秒、OS起動0.2秒、`taskexec pagefault.bin` 0.4秒、`exec dump.bin` 0.5秒（115200bps・16msではそれぞれ3.0・2.7・5.5・7.5秒）。`exec` 3本の出力は `emu.py` と完全一致。bitstreamはWNS +1.280ns、WHS +0.022ns。
 
 ```powershell
 py tools\simpleos_host.py COM5 --book \\wsl.localhost\Ubuntu-24.04\home\itoh\os_book_code

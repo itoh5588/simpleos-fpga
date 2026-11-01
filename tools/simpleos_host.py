@@ -382,7 +382,8 @@ def main():
                    help='os_book_code checkout (emu.py, os.bin, dir/)')
     p.add_argument('--os-bin', type=pathlib.Path, help='OS image (default: BOOK/os.bin)')
     p.add_argument('--dir', type=pathlib.Path, help='program directory (default: BOOK/dir)')
-    p.add_argument('--baud', type=int, default=115200)
+    p.add_argument('--baud', type=int, default=3000000,
+                   help='must match the bitstream (default 3000000); set the FTDI latency timer to 1 ms')
     a = p.parse_args()
     import serial
     image = (a.os_bin or a.book / 'os.bin').read_bytes()

@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: MIT
 # Build the DDR3 Simple OS bitstream for Arty S7-50.
 #   vivado -mode batch -source board/gen_mig.tcl        (once)
-#   vivado -mode batch -source board/build_os.tcl -tclargs build/os
+#   vivado -mode batch -source board/build_os.tcl -tclargs build/os [BAUD]
+# BAUD defaults to 3000000; the PC host must use the same --baud.
 # No bitstream is written when setup or hold timing fails.
-if {$argc != 1} { error "Specify an output directory" }
+if {$argc < 1 || $argc > 2} { error "Specify an output directory and optionally the UART baud rate" }
+set baud [expr {$argc == 2 ? [lindex $argv 1] : 3000000}]
 set source_dir [file normalize [file join [file dirname [info script]] ..]]
 set output_dir [file normalize [lindex $argv 0]]
 set xci [file join $source_dir build mig simpleos_mig simpleos_mig.xci]
@@ -19,7 +21,7 @@ foreach name {simpleos_uart simpleos_timer simpleos_cpu simpleos_mmu simpleos_dd
   read_vhdl -vhdl2008 [file join $source_dir rtl ${name}.vhd]
 }
 read_xdc [file join $source_dir board artys7_os.xdc]
-synth_design -top simpleos_os_board -part xc7s50csga324-1
+synth_design -top simpleos_os_board -part xc7s50csga324-1 -generic BAUD=$baud
 opt_design
 place_design
 route_design
