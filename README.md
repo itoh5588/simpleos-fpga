@@ -361,6 +361,22 @@ py tools\simpleos_host.py COM5 --book \\wsl.localhost\Ubuntu-24.04\home\itoh\os_
 
 `--book` のディレクトリーの `emu.py`・`os.bin`・`dir/` を使う。`--os-bin`・`--dir` で個別に指定できる。
 
+### SPIフラッシュへの書込み
+
+電源投入時に自動で構成するには、SPIフラッシュ（Micron MT25QL128、16MiB）へ書き込む。電源投入時のフラッシュ起動にはMODEジャンパー（JP1）が必要。書き込む前に、現在の内容を読み出して保存しておく。
+
+```sh
+# ArtyのUSBをWSLへ接続してから
+/home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/readback_flash.tcl \
+  -tclargs ~/backups/arty-s7-flash-before-XXXX.bin 210352B0BF4AA      # 全16MiBの読出し（約1分、内容は変えない）
+/home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/flash.tcl \
+  -tclargs build/os/simpleos_os_board.bit 210352B0BF4AA                # 消去・書込み・照合・フラッシュから再起動（約1分）
+```
+
+どちらもFPGAをVivadoのフラッシュ書込み用回路で構成し直すため、JTAGで書いた回路は消える。`flash.tcl` は別の回路を書き戻すときにも使える。
+
+2026-11-01に、それまでフラッシュにあったw11スタンドアロン版（`~/PDP-11/w11/rtl/sys_gen/w11a/artys7_standalone/sys_w11a_sa_as7.bit`、2026-10-27ビルド、`~/PDP-11/sd_work/release_book-v2/` の同名ファイルと同一）を読み出して `~/backups/arty-s7-flash-before-simpleos-20261101.bin`（SHA-256 `f6da0431c90c7cbd474273aefb73d9caed828f89c93e8d254fb6ed472b014594`）に保存し、3MbaudのSimple OS回路で上書きした。書込み・照合は57秒で成功し、電源の入れ直し後にDONEとLD2が点灯、`tools/check_board.py` が全項目PASSした（`tests/evidence/os-ddr3-flash-write.log`、`os-ddr3-flash-poweron-hardware.log`）。w11に戻すには、上のw11の `.bit` を `flash.tcl` で書き込む。
+
 ### 試験
 
 ```sh
