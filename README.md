@@ -50,7 +50,7 @@ Vivado Simulator 2022.1で以下が合格した。OS試験はサービス呼出�
 | C版OSでtaskexec pagefault.bin | 97か所・1552個 | C版のコマンド処理・スケジューラ・ページ割当てを含む同じ経路 |
 | UART・LED・タイマー | ワイヤーと状態の試験 | 115200 bpsのエコー00/55/AA/FF/41、短い偽スタート、異常stop、受信あふれ、LED周期・通信表示、タイマー保留・あふれ・無効化 |
 
-ログ・実装レポートは [tests/evidence](tests/evidence/) に保存した。初回の [基本ISAログ](tests/validation-2026-10-12.log) も残す。
+実機ログ・実装レポートは作者の手元の `tests/evidence/` に保存しており、公開リポジトリには含めない（本文中の `tests/evidence/...` はその記録名）。初回の [基本ISAログ](tests/validation-2026-10-12.log) も残す。
 
 OS比較試験の入出力・時刻は固定した模擬ホスト応答である。タスクのバイナリーは事前に主記憶へ置き、Python側のロードと同じ配置を作る。UARTから実際にファイルを転送しているわけではない。表示用の文字列ポインター・引数は比較するが、RTLから文字列をUARTへ流す経路はまだない。UART確認用bitstreamとOSのシミュレーションを混同しない。
 
@@ -116,7 +116,7 @@ BTN0でresetする。UARTはArty S7内蔵USB-UARTのV12/R12を使用し、Pmod�
 
 合成・配置配線・bitstream生成まで成功。77 LUT、91 FF、WNS +4.708ns、WHS +0.131ns、setup/hold違反0、最終DRC違反0。構成電圧は既存Arty S7制約と同じCFGBVS=VCCO、3.3Vを設定した。非同期UART・ボタン・LEDには外部クロックに対する入出力delayを設定していないため、レポートのno_input_delay/no_output_delayに出る。内部の未制約endpointは0。
 
-2026年10月12日、Arty S7-50（シリアル番号210352B0BF4AA）へのJTAG構成と起動完了を確認した。実UARTは115200 bps・8N1でASCII 16バイトと全バイト値256バイトの計272バイトを送受信し、エコーが完全一致した。ログは `tests/evidence/jtag.log` と `tests/evidence/uart-hardware.log`。ユーザーから動作確認の了承を得た。フラッシュには保存していない。
+2026年10月12日、Arty S7-50へのJTAG構成と起動完了を確認した。実UARTは115200 bps・8N1でASCII 16バイトと全バイト値256バイトの計272バイトを送受信し、エコーが完全一致した。ログは `tests/evidence/jtag.log` と `tests/evidence/uart-hardware.log`。ユーザーから動作確認の了承を得た。フラッシュには保存していない。
 
 CPUのホストサービスとUARTをつなぐ転送処理・文字出力・LED制御は、以下の内蔵RAM構成で実装した。OS実行用の主記憶DDR3接続は次の段階で行う。
 
@@ -334,12 +334,14 @@ LEDは基板印刷のユーザーLED LD2〜LD5を使う（LD0・LD1は3色LEDで
 
 ### ビルドと実行
 
+`BOARD_SERIAL` はVivadoのHardware Managerで表示されるDigilentの基板シリアル番号に置き換える。
+
 ```sh
 /home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/gen_mig.tcl
 /home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/build_os.tcl -tclargs build/os
 # ArtyのUSB（FT2232, 0403:6010）をWSLへ：usbipd attach --wsl --busid <BUSID>
 /home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/program_cpu.tcl \
-  -tclargs build/os/simpleos_os_board.bit 210352B0BF4AA
+  -tclargs build/os/simpleos_os_board.bit BOARD_SERIAL
 ```
 
 WindowsのPython（pyserial）からCOM5で起動する。Tera TermはCOM5から切断しておく。
@@ -368,9 +370,9 @@ py tools\simpleos_host.py COM5 --book \\wsl.localhost\Ubuntu-24.04\home\itoh\os_
 ```sh
 # ArtyのUSBをWSLへ接続してから
 /home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/readback_flash.tcl \
-  -tclargs ~/backups/arty-s7-flash-before-XXXX.bin 210352B0BF4AA      # 全16MiBの読出し（約1分、内容は変えない）
+  -tclargs ~/backups/arty-s7-flash-before-XXXX.bin BOARD_SERIAL      # 全16MiBの読出し（約1分、内容は変えない）
 /home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/flash.tcl \
-  -tclargs build/os/simpleos_os_board.bit 210352B0BF4AA                # 消去・書込み・照合・フラッシュから再起動（約1分）
+  -tclargs build/os/simpleos_os_board.bit BOARD_SERIAL                # 消去・書込み・照合・フラッシュから再起動（約1分）
 ```
 
 どちらもFPGAをVivadoのフラッシュ書込み用回路で構成し直すため、JTAGで書いた回路は消える。`flash.tcl` は別の回路を書き戻すときにも使える。
@@ -385,6 +387,6 @@ python3 tests/test_host.py /tmp/os-book-isa-review          # ボードなし：
 bash tests/run_regression.sh /tmp/os-book-isa-review /tmp/simple-c-isa-review   # 上記を含む13本
 ```
 
-2026-11-01の結果：回帰試験13本すべて合格。実機（Arty S7-50、serial 210352B0BF4AA）では、DDR3較正後に `B`・`Z`、16KiBの乱数を4か所（00000・40000・80000・FC000）で書込み・読戻し一致、`Z` 後の領域が0、続いてOSが起動し `ls`・`date`・`reg`・`taskexec pagefault.bin`（タイマー割込みとページフォルトを経てタスク1の仮想コンソールに `12345`）・`exit` まで動作してHALTした。`reg` 時のTPが0x1B、`exit` 時が0x5Bで、その間の約6.5秒に対し64回（100ms周期）のタイマー割込みを数えた。ログは `tests/evidence/os-ddr3-hardware.log`、JTAGは `os-ddr3-jtag.log`、タイミングは `os-ddr3-timing.rpt`（WNS +0.799ns、WHS +0.033ns）、bitstreamのSHA-256は `os-ddr3-bitstream.sha256`。
+2026-11-01の結果：回帰試験13本すべて合格。実機（Arty S7-50）では、DDR3較正後に `B`・`Z`、16KiBの乱数を4か所（00000・40000・80000・FC000）で書込み・読戻し一致、`Z` 後の領域が0、続いてOSが起動し `ls`・`date`・`reg`・`taskexec pagefault.bin`（タイマー割込みとページフォルトを経てタスク1の仮想コンソールに `12345`）・`exit` まで動作してHALTした。`reg` 時のTPが0x1B、`exit` 時が0x5Bで、その間の約6.5秒に対し64回（100ms周期）のタイマー割込みを数えた。ログは `tests/evidence/os-ddr3-hardware.log`、JTAGは `os-ddr3-jtag.log`、タイミングは `os-ddr3-timing.rpt`（WNS +0.799ns、WHS +0.033ns）、bitstreamのSHA-256は `os-ddr3-bitstream.sha256`。
 
 続いて `exec` を実機で確認した。上流の `hello.asm`（SYSCALL 22・1）、`mul.asm`（SYSCALL 2のPython書式 `""` と `"#04x"`）、`dump.asm`（SYSCALL 40の論理・物理ダンプ）をアセンブルして `exec` し、`Hello, World!`、`4096`・`0x1000`、各16行のダンプを得た。この37行は `emu.py` のCPUを使う模擬FPGA（`tests/test_host.py`）の出力と完全に一致した。ログは `tests/evidence/os-ddr3-exec-hardware.log`。WindowsのコンソールでもPCホストを手で操作し、キー入力・BackSpace・Ctrl+]による仮想コンソール切替（ANSI表示を含む）・`exec hello.bin`・`taskexec pagefault.bin` 後のVC 1の `12345`・`exit` を確認した。

@@ -3,3 +3,6 @@ __pycache__/
 
 # Private / internal files (worklogs, plans): not for publication
 Docs/
+
+# Hardware logs and reports: kept locally, not published
+tests/evidence/
