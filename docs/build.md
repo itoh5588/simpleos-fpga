@@ -21,7 +21,7 @@ vivado -mode batch -source board/build_os.tcl -tclargs build/os [BAUD]
 - 配置配線の後にタイミング違反があれば、物理最適化と再配線を自動で行う。それでもsetupかholdの違反が残れば、bitstreamを出さずに止まる。
 - `build/os/` に使用量（`utilization.rpt`）、タイミング（`timing.rpt`）、クロック（`clocks.rpt`）、DRC（`drc.rpt`）のレポートを残す。
 
-## JTAGで書き込む
+## JTAGで構成する
 
 ```sh
 vivado -mode batch -source board/program_cpu.tcl -tclargs build/os/simpleos_os_board.bit BOARD_SERIAL
@@ -29,12 +29,12 @@ vivado -mode batch -source board/program_cpu.tcl -tclargs build/os/simpleos_os_b
 
 - `BOARD_SERIAL` は、VivadoのHardware Managerに表示されるDigilentの基板シリアル番号。複数の基板がつながっていても、書込み先を取り違えないために指定する。
 - 電源を切ると消える。
-- WSLでは、ArtyのUSB（FT2232、0403:6010）を `usbipd attach --wsl --busid <BUSID>` でWSLへ接続しておく。COM5などのUSB-UARTアダプターは、PCホストを動かす側（Windows）に残す。
+- WSLでは、ArtyのUSB（FT2232、0403:6010）を `usbipd attach --wsl --busid <BUSID>` でWSLへ接続しておく。COM5などのUSB-UART変換器は、PCホストを動かす側（Windows）に残す。
 - GUIのHardware Managerが接続中だと失敗するので、閉じておく。
 
-## SPIフラッシュに書き込む
+## 構成フラッシュに書き込む
 
-電源投入時に自動で起動させるには、SPIフラッシュ（Micron MT25QL128、16MiB）に書く。起動にはMODEジャンパー（JP1）が必要。
+電源投入時に自動で構成させるには、構成フラッシュ（Micron MT25QL128、16MiB）に書く。起動にはMODEジャンパー（JP1）が必要。
 
 ```sh
 vivado -mode batch -source board/readback_flash.tcl -tclargs flash-backup.bin BOARD_SERIAL
@@ -43,5 +43,5 @@ vivado -mode batch -source board/flash.tcl -tclargs build/os/simpleos_os_board.b
 
 - `readback_flash.tcl` はフラッシュ全体（16MiB）をファイルに読み出す。フラッシュの内容は変えない。所要時間は約1分。上書きする前に必ず保存しておく。
 - `flash.tcl` は `.mcs`（SPI x1）を作り、消去・書込み・照合を行った後、FPGAをフラッシュから再起動してDONEを確認する。所要時間は約1分。
-- どちらも、FPGAをVivadoのフラッシュ書込み用回路で構成し直すため、JTAGで書いていた回路は消える。
+- どちらも、FPGAをVivadoのフラッシュ書込み用回路で構成し直すため、JTAGで構成していた回路は消える。
 - 保存したファイルや別の回路の `.bit` を `flash.tcl` で書けば、元に戻せる。

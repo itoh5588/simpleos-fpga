@@ -10,7 +10,7 @@ py tools\simpleos_host.py COM5 --book <os_book_codeのパス>
 
 | 引数 | 内容 |
 |---|---|
-| `COM5` | USB-UARTアダプターのポート（Linuxでは `/dev/ttyUSB0` など） |
+| `COM5` | USB-UART変換器のポート（Linuxでは `/dev/ttyUSB0` など） |
 | `--book` | os_book_codeのディレクトリー。`emu.py`・`os.bin`・`dir/` を使う |
 | `--os-bin` | OSイメージを個別に指定する（既定は `BOOK/os.bin`） |
 | `--dir` | プログラム用ディレクトリーを個別に指定する（既定は `BOOK/dir`）。`ls`・`exec`・`taskexec` が使う |

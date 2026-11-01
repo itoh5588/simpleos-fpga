@@ -12,7 +12,7 @@ DDR3でOSを動かす回路のほかに、次の2つの回路がある。どち�
 | メモリー | コード領域 0x80000〜0x81FFF（8KiB）、スタック領域 0xFE000〜0xFFFFF（8KiB）。領域外へのアクセスでは停止する。未書込みの部分は初期化しない |
 | UART | Pmod JC（[ハードウェア](hardware.md)と同じ配線）、115200bps・8N1 |
 | ビルド | `vivado -mode batch -source board/build_cpu.tcl -tclargs <出力先>` |
-| 書込み | `board/program_cpu.tcl`（[ビルドと書込み](build.md#jtagで書き込む)と同じ） |
+| 構成 | `board/program_cpu.tcl`（[ビルドと書込み](build.md#jtagで構成する)と同じ） |
 
 ### 転送の手順
 

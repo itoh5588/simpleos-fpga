@@ -6,8 +6,8 @@ CPU・MMU・タイマー・DDR3アダプターはVHDLで実装し、SYSCALLはUA
 
 ## すぐに動かす
 
-1. Arty S7-50のPmod JCにUSB-UARTアダプターをつなぐ（[ハードウェア](docs/hardware.md)）。
-2. bitstreamを作り、FPGAに書き込む（[ビルドと書込み](docs/build.md)）。
+1. Vivado 2022.1とPythonを用意し（[開発環境](docs/environment.md)）、Arty S7-50のPmod JCにUSB-UART変換器をつなぐ（[ハードウェア](docs/hardware.md)）。
+2. bitstreamを作り、FPGAを構成する（[ビルドと書込み](docs/build.md)）。
 
    ```sh
    vivado -mode batch -source board/gen_mig.tcl
@@ -25,14 +25,16 @@ CPU・MMU・タイマー・DDR3アダプターはVHDLで実装し、SYSCALLはUA
 
 | 章 | 内容 |
 |---|---|
+| [開発環境](docs/environment.md) | Windows 11とWSL2、Vivado、Python、usbipd、os_book_codeの準備 |
 | [ハードウェア](docs/hardware.md) | 必要なもの、配線、USB-UARTの設定、LED |
 | [回路の構成](docs/architecture.md) | クロック、CPU・MMU・タイマー、DDR3アダプター、MIGの設定 |
 | [UARTプロトコルとSYSCALL](docs/protocol.md) | FPGAとPCのやり取り、SYSCALLごとの処理 |
-| [ビルドと書込み](docs/build.md) | MIGの生成、bitstreamのビルド、JTAG・SPIフラッシュへの書込み |
+| [ビルドと書込み](docs/build.md) | MIGの生成、bitstreamのビルド、JTAGでの構成、構成フラッシュへの書込み |
 | [PCホスト](docs/host.md) | 使い方、内部の動作、実機の自動確認 |
 | [試験](docs/testing.md) | シミュレーション試験の種類と実行方法 |
 | [ISAの互換仕様](docs/isa.md) | `emu.py` と一致させているCPUの仕様 |
 | [その他の回路](docs/other-designs.md) | OSを使わない単一プログラム用の回路、接続確認用の回路 |
+| [用語集](docs/glossary.md) | FPGAと基板まわりの用語 |
 
 ## ライセンス
 

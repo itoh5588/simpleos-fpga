@@ -3,39 +3,38 @@
 ## 必要なもの
 
 - Digilent Arty S7-50
-- 3.3V TTLのUSB-UARTアダプター（FTDI FT232Rなど、3Mbaudに対応するもの）
-- ビルド用：Vivado 2022.1（MIG 4.2を使う）
-- PCホスト用：Python 3とpyserial（Windows・Linuxのどちらでもよい）
-- os_book_code（`d377b03a8ca71f443474fa6c549fd710deaafedf`）
+- 3.3V TTLのUSB-UART変換器（FTDI FT232Rなど、3Mbaudに対応するもの）
+
+ソフトウェアは [開発環境](environment.md) を参照。
 
 ## 配線
 
-UARTはArty内蔵のUSB-UARTではなく、Pmod JCにつないだ外付けアダプターを使う。
+UARTはArty内蔵のUSB-UARTではなく、Pmod JCにつないだ外付けの変換器を使う。
 
 | 信号 | Arty S7 | FPGAピン |
 |---|---|---|
-| FPGA送信 → アダプター受信 | Pmod JC1 | U15 |
-| FPGA受信 ← アダプター送信 | Pmod JC2 | V16 |
+| FPGA送信 → 変換器の受信 | Pmod JC1 | U15 |
+| FPGA受信 ← 変換器の送信 | Pmod JC2 | V16 |
 | GND | Pmod JC5 | — |
 
 FPGAの受信ピンはプルアップしてある。通信は3Mbaud・8N1・フロー制御なし。
 
-ArtyのUSB（内蔵のFT2232）は、JTAGでの書込みと電源に使う。
+ArtyのUSB（内蔵のFT2232）は、JTAGでの構成と電源に使う。
 
-## USB-UARTアダプターの設定
+## USB-UART変換器の設定
 
 FTDIのドライバーは、少量の受信データを「待ち時間タイマー」（既定16ms）の間ためてからPCへ渡す。OSはSYSCALLのたびにFPGAとPCの間で短い往復をするため、16msのままでは操作が大幅に遅くなる。1msにする。
 
-- Windows：デバイスマネージャー → ポート（COMとLPT）→ アダプターのCOMポートのプロパティ → ポートの設定 → 詳細設定 → 待ち時間タイマー（msec）を1にする。詳細設定とプロパティの両方でOKを押し、アダプターを挿し直すと反映される。値はレジストリ `HKLM\SYSTEM\CurrentControlSet\Enum\FTDIBUS\VID_0403+PID_6001+<シリアル>\0000\Device Parameters` の `LatencyTimer` で確認できる。
+- Windows：デバイスマネージャー → ポート（COMとLPT）→ 変換器のCOMポートのプロパティ → ポートの設定 → 詳細設定 → 待ち時間タイマー（msec）を1にする。詳細設定とプロパティの両方でOKを押し、変換器を挿し直すと反映される。値はレジストリ `HKLM\SYSTEM\CurrentControlSet\Enum\FTDIBUS\VID_0403+PID_6001+<シリアル>\0000\Device Parameters` の `LatencyTimer` で確認できる。
 - Linux：`/sys/bus/usb-serial/devices/ttyUSB*/latency_timer` に1を書く。
 
 3Mbaud・1msでの往復時間は、1バイトの読出しで約1ms、256バイトの読み書きで約2ms。
 
-この設定はアダプターごとに保存され、ほかのアプリケーションの通信速度には影響しない。
+この設定は変換器ごとに保存され、ほかのアプリケーションの通信速度には影響しない。
 
 ## 電源投入時の起動
 
-SPIフラッシュに書き込んだ回路から起動するには、MODEジャンパー（JP1）を付ける。書込み方法は [ビルドと書込み](build.md)。
+構成フラッシュに書き込んだ回路で起動するには、MODEジャンパー（JP1）を付ける。書込み方法は [ビルドと書込み](build.md)。
 
 ## クロック
 
