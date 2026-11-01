@@ -67,6 +67,19 @@ bash tests/prepare_io.sh
 
 各準備スクリプトが表示するxsimコマンドを別に実行し、PASSとFailure/ERRORがないことを確認する。タスク試験は例外試験より長く、上限20msのシミュレーション時間を設ける。C版は約10.19msで完了した。
 
+### DDR3経路のシミュレーション
+
+`rtl/simpleos_ddr3.vhd` はMMUの1バイト転送をMIGネイティブUI（x16 DDR3、4:1、128bit）の1コマンドへ変換する。直前に読んだ16バイトを1ライン保持し、書込みはDDR3へそのまま流しつつ保持ラインも更新する。MIGはSTRICT順序で使う。CPU・MMU・アダプターはMIGのui_clk（約80MHz）で動かし、クロック乗換えを置かない。
+
+`tests/migui_model.vhd` はMIG UIの振る舞いモデルで、キャリブレーション待ち、app_rdy/app_wdf_rdyの疑似乱数停止、固定読出し遅延、コマンド順の実行を再現する。実際のMIG・DDR3のタイミングは再現しない。
+
+```sh
+bash tests/prepare_ddr3.sh                                   # アダプター単体の乱数試験
+bash tests/prepare_ddr3_system.sh /tmp/os-book-isa-review os  # exceptions/tasks/c-tasksも同様
+```
+
+2026-11-01の結果（80MHz、模擬時間）：単体試験は読出し9892回・書込み10108回が参照と一致。os 19か所（0.41ms）、exceptions 11か所（0.12ms）、tasks 96か所（4.6ms）、c-tasks 97か所（19.1ms）で、レジスタ比較と終了時の主記憶1MiB全体の比較がすべて合格した。OS試験は書込み直後の同一ライン読出しをほぼ起こさないため、保持ラインの更新漏れは単体試験だけが検出する（意図的に更新を外すと単体試験だけが失敗することを確認済み）。
+
 ## LED点滅とUARTのArty S7-50用bitstream
 
 `rtl/simpleos_io_demo.vhd` は独立した接続確認用トップで、CPUやOSは含まない。基板の100MHzクロックを用い、LED0を0.5秒ごとに反転（1秒周期）し、USB-UARTから受けたバイトを115200 bps・8N1でそのまま送り返す。
