@@ -1,0 +1,29 @@
+.ADDR 0x80000
+MOVI R8, message
+SYSCALL 1
+MOVI R8, 10
+SYSCALL 0
+MOVI R8, 5
+SYSCALL 50
+MOVI R0, 123
+MULI R0, 7
+DIVI R0, 7
+SBTI R0, 123
+JPNZI bad
+MOVI R8, passed
+SYSCALL 1
+MOVI R8, 10
+SYSCALL 0
+HALT
+bad:
+MOVI R8, failure
+SYSCALL 1
+MOVI R8, 10
+SYSCALL 0
+HALT
+message:
+.STRING "Hello from Simple OS CPU on Arty S7!"
+passed:
+.STRING "MUL/DIV PASS; LEDs=5"
+failure:
+.STRING "Arithmetic FAIL"

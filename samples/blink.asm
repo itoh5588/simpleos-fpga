@@ -1,0 +1,19 @@
+.ADDR 0x80000
+MOVI R8, message
+SYSCALL 1
+MOVI R8, 10
+SYSCALL 0
+MOVI R4, 8
+MOVI R8, 0
+blink:
+XORI R8, 1
+SYSCALL 50
+MOVI R0, 0xFFFFF
+delay:
+DEC R0
+JPNZI delay
+DEC R4
+JPNZI blink
+HALT
+message:
+.STRING "CPU LED blink - eight toggles"

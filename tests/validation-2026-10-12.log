@@ -1,0 +1,21 @@
+#-----------------------------------------------------------
+# xsim v2022.1 (64-bit)
+# SW Build 3526262 on Mon Apr 18 15:47:01 MDT 2022
+# IP Build 3524634 on Mon Apr 18 20:55:01 MDT 2022
+# Start of session at: Mon Oct 12 19:15:28 2026
+# Process ID: 15851
+# Current directory: /tmp/simpleos-base-mAAgzt
+# Command line: xsim -mode tcl -source {xsim.dir/simpleos_base/xsim_script.tcl}
+# Log file: /tmp/simpleos-base-mAAgzt/xsim.log
+# Journal file: /tmp/simpleos-base-mAAgzt/xsim.jou
+# Running On: RYZEN-DESKTOP, OS: Linux, CPU Frequency: 3593.263 MHz, CPU Physical cores: 12, Host memory: 25154 MB
+#-----------------------------------------------------------
+source xsim.dir/simpleos_base/xsim_script.tcl
+# xsim {simpleos_base} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+Note: PASS: 21 checkpoints, 336 register comparisons
+Time: 5465 ns  Iteration: 0  Process: /tb_simpleos_cpu/line__57  File: /home/itoh/PDP-11/w11/experiments/simpleos_fpga/tests/tb_simpleos_cpu.vhd
+$finish called at time : 5465 ns
+exit
+INFO: [Common 17-206] Exiting xsim at Mon Oct 12 19:15:32 2026...
