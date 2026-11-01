@@ -1,2 +1,5 @@
 build/
 __pycache__/
+
+# Private / internal files (worklogs, plans): not for publication
+Docs/
