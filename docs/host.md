@@ -50,3 +50,5 @@ py tools\check_board.py COM5 --book <os_book_codeのパス> --dir <プログラ�
 2. OSを起動し、`ls`、`date`、`reg`、`taskexec pagefault.bin`、`exec hello.bin`、`exec mul.bin`、`exec dump.bin`、`exit` を順に入力して、それぞれの表示を確かめる。
 
 `--dir` には、os_book_codeの `pagefault.asm`・`hello.asm`・`mul.asm`・`dump.asm` をアセンブルした `.bin` を置く。3Mbaudでは全体で数秒で終わる。
+
+命令の速さを測る `tools/bench_loop.py` は [速度測定](performance.md) を参照。

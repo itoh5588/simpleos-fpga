@@ -28,7 +28,7 @@ FTDIのドライバーは、少量の受信データを「待ち時間タイマ�
 - Windows：デバイスマネージャー → ポート（COMとLPT）→ 変換器のCOMポートのプロパティ → ポートの設定 → 詳細設定 → 待ち時間タイマー（msec）を1にする。詳細設定とプロパティの両方でOKを押し、変換器を挿し直すと反映される。値はレジストリ `HKLM\SYSTEM\CurrentControlSet\Enum\FTDIBUS\VID_0403+PID_6001+<シリアル>\0000\Device Parameters` の `LatencyTimer` で確認できる。
 - Linux：`/sys/bus/usb-serial/devices/ttyUSB*/latency_timer` に1を書く。
 
-3Mbaud・1msでの往復時間は、1バイトの読出しで約1ms、256バイトの読み書きで約2ms。
+3Mbaud・1msでの往復時間は、1バイトの読出しで約1ms、256バイトの読み書きで約2ms（[速度測定](performance.md#uartの往復時間)）。
 
 この設定は変換器ごとに保存され、ほかのアプリケーションの通信速度には影響しない。
 

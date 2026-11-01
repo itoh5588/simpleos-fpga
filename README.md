@@ -32,6 +32,7 @@ CPU・MMU・タイマー・DDR3アダプターはVHDLで実装し、SYSCALLはUA
 | [ビルドと書込み](docs/build.md) | MIGの生成、bitstreamのビルド、JTAGでの構成、構成フラッシュへの書込み |
 | [PCホスト](docs/host.md) | 使い方、内部の動作、実機の自動確認 |
 | [試験](docs/testing.md) | シミュレーション試験の種類と実行方法 |
+| [速度測定](docs/performance.md) | エミュレーターとの命令の速さの比較、UARTの往復時間、OSの操作時間 |
 | [ISAの互換仕様](docs/isa.md) | `emu.py` と一致させているCPUの仕様 |
 | [その他の回路](docs/other-designs.md) | OSを使わない単一プログラム用の回路、接続確認用の回路 |
 | [用語集](docs/glossary.md) | FPGAと基板まわりの用語 |
