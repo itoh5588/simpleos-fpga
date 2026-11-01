@@ -80,6 +80,17 @@ bash tests/prepare_ddr3_system.sh /tmp/os-book-isa-review os  # exceptions/tasks
 
 2026-11-01の結果（80MHz、模擬時間）：単体試験は読出し9892回・書込み10108回が参照と一致。os 19か所（0.41ms）、exceptions 11か所（0.12ms）、tasks 96か所（4.6ms）、c-tasks 97か所（19.1ms）で、レジスタ比較と終了時の主記憶1MiB全体の比較がすべて合格した。OS試験は書込み直後の同一ライン読出しをほぼ起こさないため、保持ラインの更新漏れは単体試験だけが検出する（意図的に更新を外すと単体試験だけが失敗することを確認済み）。
 
+### MIGの生成と実MIGでの試験
+
+`board/mig_artys7.prj` はDigilentのArty S7-50用ボードファイル（`Digilent/vivado-boards` の `new/board_files/arty-s7-50/B.0/mig.prj`、MITライセンス、`board/mig_artys7.prj.LICENSE-Digilent.txt`）から作った。DDR3部品・ピン配置・タイミング値はそのままで、変更点はモジュール名 `simpleos_mig`、UIをAXIからNATIVEへ、順序をNormalからStrictへ、システムクロックを自前MMCMから入れるNo Buffer、XADCをMIG内蔵へ、追加UIクロックなし、の6点。生成結果はDDR3 325MHz（tCK 3077ps）、4:1、ui_clk約81.25MHz、app_addr 28bit、BANK_ROW_COLUMN、sys_rstはLowでリセット。
+
+```sh
+/home/itoh/Xilinx/Vivado/2022.1/bin/vivado -mode batch -source board/gen_mig.tcl   # build/mig/ へ生成（MIG 4.2）
+bash tests/prepare_ddr3_mig.sh   # 生成したMIG（高速シミュレーション較正）とMicron DDR3モデルでアダプター試験
+```
+
+生成したMIGとDDR3モデルはAMD（Xilinx）のライセンスで、`build/` に置きリポジトリには含めない。
+
 ## LED点滅とUARTのArty S7-50用bitstream
 
 `rtl/simpleos_io_demo.vhd` は独立した接続確認用トップで、CPUやOSは含まない。基板の100MHzクロックを用い、LED0を0.5秒ごとに反転（1秒周期）し、USB-UARTから受けたバイトを115200 bps・8N1でそのまま送り返す。
