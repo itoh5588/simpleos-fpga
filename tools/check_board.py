@@ -54,7 +54,7 @@ def os_test(link, book, directory, image):
     runner.start()
 
     def seen():
-        return screen.getvalue() + ''.join(host.ns['vc_buffers'])
+        return screen.getvalue().replace('\r\n', '\n') + ''.join(host.ns['vc_buffers'])
 
     def wait_for(pattern, timeout=60):
         deadline = time.monotonic() + timeout
@@ -67,7 +67,8 @@ def os_test(link, book, directory, image):
     print(f'OS booted ({time.monotonic() - t0:.1f} s)', flush=True)
     for line, pattern in (('ls', r'pagefault\.bin'), ('date', r'\d{4}-\d\d-\d\d \d\d:\d\d:\d\d'),
                           ('reg', r'CR: [0-9A-F]{8}'), ('taskexec pagefault.bin', '12345'),
-                          ('exit', 'CPU halted')):
+                          ('exec hello.bin', 'Hello, World!'), ('exec mul.bin', '0x1000'),
+                          ('exec dump.bin', r'(?s)Physical Memory Dump.*\n000F0  [^\n]*\n'), ('exit', 'CPU halted')):
         t = time.monotonic()
         for ch in line + '\n':
             host.key(ch)

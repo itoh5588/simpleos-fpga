@@ -201,7 +201,8 @@ def main():
     fpga.start()
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
-        (tmp / 'pagefault.bin').write_bytes(assemble(book, 'pagefault.asm'))
+        for name in ('pagefault', 'hello', 'mul', 'dump'):
+            (tmp / f'{name}.bin').write_bytes(assemble(book, f'{name}.asm'))
         image = assemble(book, 'os.asm')
         host = simpleos_host.Host(simpleos_host.Link(port), book / 'emu.py', tmp)
         screen = io.StringIO()
@@ -211,11 +212,12 @@ def main():
         runner = threading.Thread(target=lambda: result.setdefault('status', host.run()), daemon=True)
         runner.start()
 
-        def wait_for(text, timeout=30):
+        def wait_for(pattern, timeout=30):
             deadline = time.monotonic() + timeout
             # Task output goes to its own virtual console (task n -> VC n), as in emu.py.
-            while text not in screen.getvalue() + ''.join(host.ns['vc_buffers']):
-                assert time.monotonic() < deadline, f'timeout waiting for {text!r}; screen:\n{screen.getvalue()}'
+            while not re.search(pattern, screen.getvalue().replace('\r\n', '\n')
+                                + ''.join(host.ns['vc_buffers'])):
+                assert time.monotonic() < deadline, f'timeout waiting for {pattern!r}; screen:\n{screen.getvalue()}'
                 time.sleep(0.05)
 
         def type_line(line):
@@ -223,8 +225,10 @@ def main():
                 host.key(ch)
 
         wait_for('Welcome to Simple OS!')
-        for line, expect in (('ls', 'pagefault.bin'), ('date', None), ('reg', 'CR: '),
-                             ('taskexec pagefault.bin', '12345'), ('exit', 'bye.')):
+        for line, expect in (('ls', r'pagefault\.bin'), ('date', None), ('reg', 'CR: '),
+                             ('taskexec pagefault.bin', '12345'),
+                             ('exec hello.bin', 'Hello, World!'), ('exec mul.bin', '0x1000'),
+                             ('exec dump.bin', r'(?s)Physical Memory Dump.*\n000F0  [^\n]*\n'), ('exit', r'bye\.')):
             before = len(screen.getvalue())
             type_line(line)
             if expect:
@@ -239,14 +243,16 @@ def main():
     consoles = ''.join(host.ns['vc_buffers'])
     assert result.get('status') == 0, f'host did not see a clean HALT: {result}'
     assert not fpga.unexpected, f'CPU printed directly: {fpga.unexpected}'
-    for text in ('Welcome to Simple OS!', 'pagefault.bin', 'PC: ', 'bye.', 'CPU halted.'):
+    for text in ('Welcome to Simple OS!', 'pagefault.bin', 'PC: ', 'Hello, World!', '4096\r\n0x1000',
+                 '[Logical Memory Dump]', '[Physical Memory Dump]', 'bye.', 'CPU halted.'):
         assert text in out, text
     assert '12345' in host.ns['vc_buffers'][1], 'task 1 output missing from VC 1'
     print(out.replace('\r\n', '\n'))
     print('--- VC 1 ---')
     print(host.ns['vc_buffers'][1])
     print('PASS: host drove the unchanged OS through the FPGA protocol '
-          '(ls, date, reg, taskexec pagefault.bin with timer and page faults, exit, HALT)')
+          '(ls, date, reg, taskexec pagefault.bin with timer and page faults, '
+          'exec hello/mul/dump with SYSCALL 22/2/40, exit, HALT)')
 
 
 if __name__ == '__main__':

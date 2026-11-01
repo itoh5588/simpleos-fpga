@@ -323,7 +323,7 @@ Tera Termを別プロセスから同時に開く方式ではなく、接続済�
 | `rtl/simpleos_os_core.vhd` | MIGのui_clk（81.25MHz）上のCPU・MMU・100msタイマー・DDR3アダプター・UARTモニター |
 | `board/artys7_os.xdc` | 12MHz、BTN0、UART（JC1=FPGA送信、JC2=FPGA受信、JC5=GND）、LED |
 | `board/build_os.tcl` | 合成〜bitstream。setup/hold違反時はbitstreamを出さない |
-| `tools/simpleos_host.py` | PCホスト。Ctrl+]に続けて0〜3で仮想コンソール切替、Ctrl+]に続けてqで終了 |
+| `tools/simpleos_host.py` | PCホスト。Ctrl+]に続けて0〜3で仮想コンソール切替、Ctrl+]に続けてqで終了。HALT後はキー入力までウィンドウを閉じない |
 | `tools/check_board.py` | 実機の自動確認（DDR3読み書きとOSの対話） |
 
 R2の100MHzは使わない。R2と同じクロック領域のMMCMをMIGが使うため、配置で専用クロック経路を確保できない。
@@ -359,3 +359,5 @@ bash tests/run_regression.sh /tmp/os-book-isa-review /tmp/simple-c-isa-review   
 ```
 
 2026-11-01の結果：回帰試験13本すべて合格。実機（Arty S7-50、serial 210352B0BF4AA）では、DDR3較正後に `B`・`Z`、16KiBの乱数を4か所（00000・40000・80000・FC000）で書込み・読戻し一致、`Z` 後の領域が0、続いてOSが起動し `ls`・`date`・`reg`・`taskexec pagefault.bin`（タイマー割込みとページフォルトを経てタスク1の仮想コンソールに `12345`）・`exit` まで動作してHALTした。`reg` 時のTPが0x1B、`exit` 時が0x5Bで、その間の約6.5秒に対し64回（100ms周期）のタイマー割込みを数えた。ログは `tests/evidence/os-ddr3-hardware.log`、JTAGは `os-ddr3-jtag.log`、タイミングは `os-ddr3-timing.rpt`（WNS +0.799ns、WHS +0.033ns）、bitstreamのSHA-256は `os-ddr3-bitstream.sha256`。
+
+続いて `exec` を実機で確認した。上流の `hello.asm`（SYSCALL 22・1）、`mul.asm`（SYSCALL 2のPython書式 `""` と `"#04x"`）、`dump.asm`（SYSCALL 40の論理・物理ダンプ）をアセンブルして `exec` し、`Hello, World!`、`4096`・`0x1000`、各16行のダンプを得た。この37行は `emu.py` のCPUを使う模擬FPGA（`tests/test_host.py`）の出力と完全に一致した。ログは `tests/evidence/os-ddr3-exec-hardware.log`。WindowsのコンソールでもPCホストを手で操作し、キー入力・BackSpace・Ctrl+]による仮想コンソール切替（ANSI表示を含む）・`exec hello.bin`・`taskexec pagefault.bin` 後のVC 1の `12345`・`exit` を確認した。

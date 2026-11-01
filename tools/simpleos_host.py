@@ -191,6 +191,7 @@ class Host:
         self.key_queues = [queue.Queue() for _ in range(4)]
         self.vc_switch_queue = queue.Queue()
         self.stop = threading.Event()
+        self.halted = threading.Event()     # CPU stopped; the next key closes the host
 
     # -- emu.py do_syscall, with memory and CPU state on the FPGA ---------
     def _sync_state(self, r8, r9):
@@ -318,6 +319,9 @@ class Host:
     # -- keyboard (emu.py keyboard_listener) -------------------------------
     def key(self, ch):
         """Feed one typed character; returns False when the user quits."""
+        if self.halted.is_set():
+            self.stop.set()
+            return False
         if getattr(self, '_awaiting_digit', False):
             self._awaiting_digit = False
             if ch in '0123':
@@ -394,6 +398,15 @@ def main():
         status = None
     finally:
         port.close()
+    if status is not None:
+        # A console window started for the host closes when it exits; keep the
+        # HALT output on screen until a key is pressed.
+        host.halted.set()
+        print('\r\n[host] CPU stopped. Press any key to close.', flush=True)
+        try:
+            host.stop.wait()
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':
